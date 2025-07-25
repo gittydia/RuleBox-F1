@@ -3,7 +3,11 @@ export default async function handler(req, res) {
     const { query, conversationId } = req.body;
 
     try {
-      const response = await fetch("http://localhost:8000/api/ai-query", {
+      const backendUrl = process.env.NODE_ENV === 'production' 
+        ? '' // Use relative URL in production
+        : "http://localhost:8000";
+      
+      const response = await fetch(`${backendUrl}/api/ai-query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
