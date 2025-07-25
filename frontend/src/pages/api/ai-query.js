@@ -2,12 +2,13 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { query, conversationId } = req.body;
 
+    // In production, use relative URL; in development, use localhost
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? '/api/ai-query'  // This will route to your Python backend
+      : 'http://localhost:8000/api/ai-query';
+
     try {
-      const backendUrl = process.env.NODE_ENV === 'production' 
-        ? '' // Use relative URL in production
-        : "http://localhost:8000";
-      
-      const response = await fetch(`${backendUrl}/api/ai-query`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
