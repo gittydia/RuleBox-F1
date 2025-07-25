@@ -1,2 +1,1 @@
-fastapi
-uvicorn
+# Pure Python - no external dependencies needed
