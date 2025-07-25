@@ -1,7 +1,7 @@
 // components/AIChatInterface.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 // Define a type for messages
 interface Message {
@@ -131,7 +131,7 @@ export default function AIChatInterface() {
             </button>
           </div>
           <div className="mt-3 text-sm text-gray-400">
-            I'll remember our conversation context throughout our chat
+            I&apos;ll remember our conversation context throughout our chat
           </div>
         </div>
 
@@ -144,10 +144,10 @@ export default function AIChatInterface() {
               </h3>
               <p className="text-gray-400 max-w-md">
                 Ask me anything about F1 regulations, rules, or technical specifications. 
-                I'll remember our conversation context and can answer follow-up questions.
+                I&apos;ll remember our conversation context and can answer follow-up questions.
               </p>
               <div className="mt-6 text-sm text-gray-500">
-                🔄 Conversation mode: I'll remember our chat context
+                🔄 Conversation mode: I&apos;ll remember our chat context
               </div>
             </div>
           ) : (
