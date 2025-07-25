@@ -3,11 +3,11 @@ export default async function handler(req, res) {
     const { query } = req.body;
 
     try {
-      const backendUrl = process.env.NODE_ENV === 'production' 
-        ? '' // Use relative URL in production
-        : "http://localhost:8000";
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/search'  // This will route to your Python backend
+        : 'http://localhost:8000/api/search';
       
-      const response = await fetch(`${backendUrl}/api/search`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
