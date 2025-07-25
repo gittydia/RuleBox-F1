@@ -1,5 +1,3 @@
-import { NextApiRequest, NextApiResponse } from "next";
-
 export default async function handler(req, res) {
   if (req.method === "POST") {
     const { query } = req.body;
@@ -19,7 +17,7 @@ export default async function handler(req, res) {
       } else {
         res.status(response.status).json({ error: "Search failed." });
       }
-    } catch (error) {
+    } catch {
       res.status(500).json({ error: "Internal server error." });
     }
   } else {
