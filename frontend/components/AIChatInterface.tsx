@@ -33,6 +33,7 @@ export default function AIChatInterface() {
     setIsTyping(true);
 
     try {
+      // Call Python backend directly
       const response = await fetch("/api/ai-query", {
         method: "POST",
         headers: {
