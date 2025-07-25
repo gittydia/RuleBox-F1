@@ -40,20 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# package-lock
-package.json
-package.json.*
-next.config.js
-postcss.config.js
-tsconfig.json
-eslint.json
-postcss.config.mjs.*
+# package-lock files (keep config files but ignore lock files)
 package-lock.json
 package-lock.json.*
-package-lock.json.*
-package-lock.json.*.npm
-package-lock.json.*.yarn
+*.lock
 
+# node_modules
 node_modules/
-package-lock.json
-package.json.*
