@@ -21,8 +21,15 @@ interface Result {
 const QueryInterface = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]); // Use the Result type here
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = async () => {
+    if (!query.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+    
     try {
       console.log("Query sent:", query); // Log the query being sent
 
@@ -38,20 +45,25 @@ const QueryInterface = () => {
         const data = await response.json();
         console.log("Raw response data:", data); // Log the raw response for debugging
 
-        // Handle nested results structure
-        if (data.results && Array.isArray(data.results.results)) {
-          setResults(data.results.results);
+        // Handle response structure - backend returns {results: [...]}
+        if (data.results && Array.isArray(data.results)) {
+          setResults(data.results);
         } else {
           console.error("Unexpected response format:", data);
           setResults([]); // Reset results to an empty array if the response is invalid
         }
       } else {
-        console.error("Search failed with status:", response.status);
-        setResults([]); // Reset results to an empty array in case of an error
+        const errorText = await response.text();
+        console.error("Search failed with status:", response.status, errorText);
+        setError(`Search failed (${response.status}): ${errorText || 'Unknown error'}`);
+        setResults([]);
       }
     } catch (error) {
       console.error("Error fetching search results:", error);
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setResults([]); // Reset results to an empty array in case of an error
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,7 +79,10 @@ const QueryInterface = () => {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (error) setError(null); // Clear error when user starts typing
+              }}
               placeholder="Search for F1 rules, regulations, or technical specifications..."
               className="form-input flex-1"
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -75,12 +90,21 @@ const QueryInterface = () => {
             <button
               onClick={handleSearch}
               className="racing-button px-8 py-3"
-              disabled={!query.trim()}
+              disabled={!query.trim() || loading}
             >
-              🔍 Search
+              {loading ? '� Searching...' : '�🔍 Search'}
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-xl mr-2">⚠️</span>
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="mb-4">
