@@ -14,9 +14,6 @@ export async function POST(request: NextRequest) {
     // Your FastAPI backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
     
-    console.log(`Forwarding AI query request to: ${BACKEND_URL}/api/ai-query`);
-    console.log(`Query: ${query}`);
-    console.log(`Conversation ID: ${conversation_id}`);
     
     const response = await fetch(`${BACKEND_URL}/api/ai-query`, {
       method: 'POST',
@@ -39,7 +36,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('Backend AI response:', data);
     return NextResponse.json(data);
 
   } catch (error) {
