@@ -9,13 +9,21 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import torch
+from dotenv import load_dotenv
 
 if not torch.cuda.is_available():
     print("Warning: CUDA is not available. PyTorch will use the CPU backend.")
 
+# Load environment variables
+load_dotenv()
+
 class RuleBoxF1Processor:
-    def __init__(self, mongodb_uri='mongodb://localhost:27017/', openrouter_api_key=''):
-        self.client = MongoClient(mongodb_uri)
+    def __init__(self):
+        # Use environment variables instead of hardcoded values
+        MONGODB_URL = os.getenv('MONGODB_URL')  # Keep as MONGODB_URL
+        openrouter_api_key = os.getenv('OPENROUTER_API_KEY', '')
+        
+        self.client = MongoClient(MONGODB_URL)  # Keep as MONGODB_URL
         self.db = self.client['rulebox_f1_database']
         if openrouter_api_key:
             try:
