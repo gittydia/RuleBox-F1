@@ -10,6 +10,24 @@ interface Message {
   timestamp: string;
 }
 
+// Development flag for logging
+const isDevelopment = process.env.NODE_ENV === 'development';
+const DEBUG_LOGGING = false; // Set to true only when debugging
+
+// Function to parse markdown-style formatting
+const parseMarkdown = (text: string): string => {
+  // Convert **text** to <strong>text</strong>
+  let parsed = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert *text* to <em>text</em>
+  parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Convert newlines to <br> tags for proper line breaks
+  parsed = parsed.replace(/\n/g, '<br>');
+  
+  return parsed;
+};
+
 export default function AIChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -47,6 +65,12 @@ export default function AIChatInterface() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Only log in debug mode
+        if (DEBUG_LOGGING) {
+          console.log("AI Response:", data);
+        }
+        
         setIsTyping(false);
         setMessages((prev) => [
           ...prev,
@@ -69,7 +93,10 @@ export default function AIChatInterface() {
         ]);
       }
     } catch (error) {
-      console.error("Network error:", error);
+      // Only log errors in debug mode
+      if (DEBUG_LOGGING) {
+        console.error("Network error:", error);
+      }
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
@@ -168,7 +195,14 @@ export default function AIChatInterface() {
                       <div className="text-sm opacity-70 mb-1">
                         {message.sender === "user" ? "You" : "AI Assistant"}
                       </div>
-                      <div className="whitespace-pre-wrap">{message.text}</div>
+                      {message.sender === "ai" ? (
+                        <div 
+                          className="whitespace-pre-wrap ai-message-content"
+                          dangerouslySetInnerHTML={{ __html: parseMarkdown(message.text) }}
+                        />
+                      ) : (
+                        <div className="whitespace-pre-wrap">{message.text}</div>
+                      )}
                     </div>
                   </div>
                 </div>
