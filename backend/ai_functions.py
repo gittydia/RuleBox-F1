@@ -27,11 +27,12 @@ else:
         print(f"Error initializing OpenAI client: {e}")
         ai_client = None
 
-MONGODB_URI = "mongodb://localhost:27017/"
-print(f"Using hardcoded MongoDB URI: {MONGODB_URI}")
 
-db_client = MongoClient(MONGODB_URI)
-db = db_client.get_database("rulebox_f1_database")
+# MongoDB configuration
+MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/')  # Changed from MONGODB_URI
+client = MongoClient(MONGODB_URL)  # Changed from MONGODB_URI
+
+db = client.get_database("rulebox_f1_database")
 rules_collection = db["rules"]
 try:
     existing_indexes = rules_collection.index_information()
@@ -61,7 +62,7 @@ async def ai_query(query, context_rules=None, conversation_id=None):  # Make it 
             messages = conversation_history[conversation_id]
         
         if not context_rules:
-            if not db_client:
+            if not client:
                 return "Database connection is not available. Please provide a MongoDB URI."
             rules_collection = db["rules"]
             context_rules = list(rules_collection.find({"$text": {"$search": query}}).limit(3))
