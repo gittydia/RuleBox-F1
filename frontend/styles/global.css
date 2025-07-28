@@ -234,6 +234,21 @@ html {
   }
 }
 
+/* AI Message Content Styles */
+.ai-message-content strong {
+  color: #e42f2f;
+  font-weight: 700;
+}
+
+.ai-message-content em {
+  color: #ffa500;
+  font-style: italic;
+}
+
+.ai-message-content br {
+  line-height: 1.8;
+}
+
 /* Search Result Styles */
 .search-result {
   background: rgba(30, 30, 30, 0.9);

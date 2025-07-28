@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
 
     // Your FastAPI backend URL
     const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
-    
-    console.log(`Forwarding search request to: ${BACKEND_URL}/api/search`);
-    console.log(`Query: ${query}`);
-    
+        
     const response = await fetch(`${BACKEND_URL}/api/search`, {
       method: 'POST',
       headers: {
@@ -35,7 +32,6 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('Backend response:', data);
     return NextResponse.json(data);
 
   } catch (error) {
