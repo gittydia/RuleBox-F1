@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from auth import AuthHandler
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
+from pymongo import MongoClient
 
 load_dotenv()
 
@@ -31,14 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# MongoDB configuration
+MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/')  # Changed from MONGODB_URI
+
 # Initialize MongoDB client
-db_client = AsyncIOMotorClient(os.getenv("MONGODB_URI", "mongodb://localhost:27017/"))
+db_client = AsyncIOMotorClient(MONGODB_URL)
 
 # Initialize the RuleBoxF1Processor
-processor = RuleBoxF1Processor(
-    mongodb_uri=os.getenv("MONGODB_URI", "mongodb://localhost:27017/"),
-    openrouter_api_key=os.getenv("OPENROUTER_API_KEY", "")
-)
+processor = RuleBoxF1Processor()
 
 auth_handler = AuthHandler(db_client)
 
@@ -97,6 +98,9 @@ async def login(request: Request):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
+# Add logging control flag at the top
+DEBUG_LOGGING = False  # Set to True only when debugging
+
 @app.post("/api/search")
 async def search(request: Request):
     try:
@@ -118,6 +122,10 @@ async def search(request: Request):
                 result["_id"] = str(result["_id"])
             serialized_results.append(result)
         
+        # Suppress logging of search results
+        if DEBUG_LOGGING:
+            print(f"Search results: {serialized_results}")
+        
         return JSONResponse(content={"results": serialized_results})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -135,7 +143,8 @@ async def ai_query_endpoint(request: Request):
         try:
             response = await ai_query(query)
         except Exception as ai_error:
-            print(f"AI function error: {str(ai_error)}")
+            if DEBUG_LOGGING:
+                print(f"AI function error: {str(ai_error)}")
             raise ai_error
         
         # Ensure the response is JSON serializable
@@ -144,11 +153,11 @@ async def ai_query_endpoint(request: Request):
         elif not isinstance(response, (str, int, float, bool, list, dict, type(None))):
             response = str(response)
         
-        return {"response": response}
+        return JSONResponse(content={"response": response})
+        
     except Exception as e:
-        print(f"AI query error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        if DEBUG_LOGGING:
+            print(f"AI query error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI query failed: {str(e)}")
 
 @app.post("/api/ingest-data")
@@ -182,7 +191,8 @@ async def data_status():
 async def startup_event():
     """Check if database has data and process raw_data if needed"""
     try:
-        print("Starting up RuleBox F1 API...")
+        if DEBUG_LOGGING:
+            print("Starting up RuleBox F1 API...")
         db = processor.db
         collections = db.list_collection_names()
         
@@ -196,28 +206,35 @@ async def startup_event():
                 except:
                     pass
         
-        print(f"Found {total_documents} documents in database")
+        if DEBUG_LOGGING:
+            print(f"Found {total_documents} documents in database")
         
         # Only process if database is completely empty
         if total_documents == 0:
-            print("Database is empty. Will process raw_data folder in background...")
+            if DEBUG_LOGGING:
+                print("Database is empty. Will process raw_data folder in background...")
             # Don't await - let it run in background
             asyncio.create_task(process_data_in_background())
         else:
-            print(f"Database already contains {total_documents} documents - skipping data processing")
+            if DEBUG_LOGGING:
+                print(f"Database already contains {total_documents} documents - skipping data processing")
             
     except Exception as e:
-        print(f"Startup check failed: {e}")
+        if DEBUG_LOGGING:
+            print(f"Startup check failed: {e}")
 
 async def process_data_in_background():
     """Process data in background without blocking startup"""
     try:
-        print("Background processing started...")
+        if DEBUG_LOGGING:
+            print("Background processing started...")
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, processor.process_documents)
-        print(f"Background data processing completed: {result}")
+        if DEBUG_LOGGING:
+            print(f"Background data processing completed: {result}")
     except Exception as e:
-        print(f"Background data processing failed: {e}")
+        if DEBUG_LOGGING:
+            print(f"Background data processing failed: {e}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
