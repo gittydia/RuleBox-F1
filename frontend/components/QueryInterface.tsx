@@ -43,7 +43,6 @@ const QueryInterface = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Raw response data:", data); // Log the raw response for debugging
 
         // Handle response structure - backend returns {results: [...]}
         if (data.results && Array.isArray(data.results)) {
@@ -146,26 +145,11 @@ const QueryInterface = () => {
                   </div>
                 )}
               </div>
-
-              {result.metadata?.keywords && result.metadata.keywords.length > 0 && (
-                <div className="mb-4">
-                  <strong className="text-[#ff1801] text-sm">Keywords:</strong>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {result.metadata.keywords.map((keyword, idx) => (
-                      <span 
-                        key={idx} 
-                        className="px-2 py-1 text-xs bg-[#ff1801] text-white rounded-full"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
+              {result.content && result.content.trim() && (
+                <div className="content">
+                  {result.content}
                 </div>
               )}
-
-              <div className="content">
-                {result.content || "No content available."}
-              </div>
             </div>
           ))}
         </div>
