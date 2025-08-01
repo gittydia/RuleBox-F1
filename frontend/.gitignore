@@ -40,11 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# package-lock files (keep config files but ignore lock files)
-package-lock.json
-package-lock.json.*
-*.lock
-
 # node_modules
 node_modules/
 
