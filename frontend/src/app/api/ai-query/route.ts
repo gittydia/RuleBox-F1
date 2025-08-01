@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     
     // Check if it's a connection error
     if (error instanceof Error && 'cause' in error) {
-      const cause = error.cause as any;
+      const cause = error.cause as { code?: string };
       if (cause?.code === 'ECONNREFUSED') {
         return NextResponse.json(
           { 

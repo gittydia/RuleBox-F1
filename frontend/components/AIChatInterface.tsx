@@ -11,7 +11,6 @@ interface Message {
 }
 
 // Development flag for logging
-const isDevelopment = process.env.NODE_ENV === 'development';
 const DEBUG_LOGGING = false; // Set to true only when debugging
 
 // Function to parse markdown-style formatting
