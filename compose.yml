@@ -1,0 +1,51 @@
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: rulebox-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: deanMongo
+      MONGO_INITDB_ROOT_PASSWORD: deanMongoDB
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    networks:
+      - rulebox-network
+
+  backend:
+    build: ./backend
+    container_name: rulebox-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/.env:/app/.env:ro  # Mount to correct working directory
+    environment:
+      - MONGODB_URL=mongodb://deanMongo:deanMongoDB@mongodb:27017/rulebox_f1_database  # Use local MongoDB
+      - OPENROUTER_API_KEY=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
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - rulebox-network  # Add this line
+
+  frontend:
+    build: ./frontend
+    container_name: rulebox-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - rulebox-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  rulebox-network:
+    driver: bridge
