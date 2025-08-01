@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -12,6 +12,7 @@ RUN npm install
 COPY . .
 
 # Build the application
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 EXPOSE 3000
