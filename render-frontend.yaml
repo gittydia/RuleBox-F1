@@ -11,4 +11,4 @@ services:
         - frontend/**
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://rulebox-f1.onrender.com
+        value: https://rulebox-backend.onrender.com
