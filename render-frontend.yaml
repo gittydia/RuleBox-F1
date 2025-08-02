@@ -4,12 +4,11 @@ services:
     env: docker
     plan: free
     autoDeploy: true
-    dockerContext: .
-    dockerfilePath: ./Dockerfile.frontend
+    dockerContext: ./frontend
+    dockerfilePath: ./Dockerfile
     buildFilter:
       paths:
         - frontend/**
-        - Dockerfile.frontend
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://rulebox-f1.onrender.com
