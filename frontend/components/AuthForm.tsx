@@ -15,7 +15,7 @@ export default function AuthForm({ type = "login" }) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const endpoint = type === "login" ? "http://localhost:8000/auth/login" : "http://localhost:8000/auth/register";
+    const endpoint = type === "login" ? "/api/auth/login" : "/api/auth/register";
 
     try {
       console.log("Making request to:", endpoint);

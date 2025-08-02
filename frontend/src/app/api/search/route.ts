@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Your FastAPI backend URL
-    const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         
     const response = await fetch(`${BACKEND_URL}/api/search`, {
       method: 'POST',
