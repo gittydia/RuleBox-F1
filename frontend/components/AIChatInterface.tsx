@@ -15,11 +15,26 @@ const DEBUG_LOGGING = false; // Set to true only when debugging
 
 // Function to parse markdown-style formatting
 const parseMarkdown = (text: string): string => {
+  // Convert ### headers to <h3> tags
+  let parsed = text.replace(/^### (.*$)/gm, '<h3 style="font-size: 1.25rem; font-weight: bold; margin: 1rem 0 0.5rem 0; color: #ff1801;">$1</h3>');
+  
+  // Convert ## headers to <h2> tags
+  parsed = parsed.replace(/^## (.*$)/gm, '<h2 style="font-size: 1.5rem; font-weight: bold; margin: 1rem 0 0.5rem 0; color: #ff1801;">$1</h2>');
+  
+  // Convert # headers to <h1> tags
+  parsed = parsed.replace(/^# (.*$)/gm, '<h1 style="font-size: 1.75rem; font-weight: bold; margin: 1rem 0 0.5rem 0; color: #ff1801;">$1</h1>');
+  
+  // Convert --- to horizontal rules
+  parsed = parsed.replace(/^---$/gm, '<hr style="border: none; border-top: 1px solid #444; margin: 1rem 0;">');
+  
   // Convert **text** to <strong>text</strong>
-  let parsed = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   
   // Convert *text* to <em>text</em>
   parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Convert numbered lists (1. text) to proper list items
+  parsed = parsed.replace(/^(\d+)\. (.*)$/gm, '<div style="margin-left: 1rem;">$1. $2</div>');
   
   // Convert newlines to <br> tags for proper line breaks
   parsed = parsed.replace(/\n/g, '<br>');
@@ -197,7 +212,7 @@ export default function AIChatInterface() {
                       {message.sender === "ai" ? (
                         <div 
                           className="whitespace-pre-wrap ai-message-content"
-                          dangerouslySetInnerHTML={{ __html: parseMarkdown(message.text) }}
+                           dangerouslySetInnerHTML={{ __html: parseMarkdown(message.text) }}
                         />
                       ) : (
                         <div className="whitespace-pre-wrap">{message.text}</div>

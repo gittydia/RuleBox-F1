@@ -43,6 +43,33 @@ processor = RuleBoxF1Processor()
 
 auth_handler = AuthHandler(db_client)
 
+@app.get("/")
+async def root():
+    return {"message": "RuleBox F1 API is running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "message": "Backend is working"}
+
+@app.get("/api/test-ai")
+async def test_ai():
+    """Simple endpoint to test AI functionality"""
+    try:
+        from ai_functions import ai_client
+        if not ai_client:
+            return {"error": "AI client not initialized"}
+        
+        # Simple test message
+        test_response = await ai_client.chat.completions.create(
+            model="deepseek/deepseek-r1",
+            messages=[{"role": "user", "content": "Say hello"}],
+            max_tokens=50,
+            temperature=0.1
+        )
+        return {"success": True, "response": test_response}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.post("/auth/register")
 async def register(request: Request):
     try:
@@ -139,9 +166,9 @@ async def ai_query_endpoint(request: Request):
         if not query:
             raise HTTPException(status_code=400, detail="Query is required.")
         
-        # Use the ai_query function from ai_functions module
+        # Use the simplified ai_query function with DeepSeek model
         try:
-            response = await ai_query(query)
+            response = await ai_query(query, conversation_id=conversation_id)
         except Exception as ai_error:
             if DEBUG_LOGGING:
                 print(f"AI function error: {str(ai_error)}")

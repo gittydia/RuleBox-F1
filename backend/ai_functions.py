@@ -4,6 +4,7 @@ import dotenv
 import os
 import asyncio
 
+# Load .env file
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if not os.path.exists(dotenv_path):
     print(f"Warning: .env file not found at {dotenv_path}")
@@ -11,10 +12,10 @@ else:
     print(f"Loading .env file from {dotenv_path}")
 dotenv.load_dotenv(dotenv_path=dotenv_path)
 
+# API key
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
 if not OPENROUTER_API_KEY:
-    print("Warning: OPENROUTER_API_KEY is not set in the environment variables. AI features will be disabled.")
+    print("Warning: OPENROUTER_API_KEY is not set.")
     ai_client = None
 else:
     print(f"OPENROUTER_API_KEY loaded successfully: {OPENROUTER_API_KEY[:4]}...")
@@ -27,85 +28,87 @@ else:
         print(f"Error initializing OpenAI client: {e}")
         ai_client = None
 
-
-# MongoDB configuration
-MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/')  # Changed from MONGODB_URI
-client = MongoClient(MONGODB_URL)  # Changed from MONGODB_URI
-
+# MongoDB setup
+MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/')
+client = MongoClient(MONGODB_URL)
 db = client.get_database("rulebox_f1_database")
 rules_collection = db["rules"]
+
+# Create index if needed
 try:
     existing_indexes = rules_collection.index_information()
     if not any("text" in index.get("key", [{}])[0] for index in existing_indexes.values()):
-        print("Creating text index on the 'rules' collection...")
+        print("Creating text index...")
         rules_collection.create_index(
             [("title", "text"), ("content", "text")],
             name="rules_text_index"
         )
-        print("Text index created successfully.")
+        print("Index created.")
     else:
-        print("Text index already exists on the 'rules' collection.")
+        print("Text index already exists.")
 except Exception as e:
-    print(f"Error ensuring text index on 'rules' collection: {e}")
+    print(f"Index error: {e}")
 
-# Store conversation history in memory (in production, use Redis or database)
+# In-memory conversation history
 conversation_history = {}
 
-async def ai_query(query, context_rules=None, conversation_id=None):  # Make it async
+# Main AI query function
+async def ai_query(query, context_rules=None, conversation_id=None):
     if not ai_client:
-        return "AI features are currently not available due to client initialization issues. Please check the OpenRouter API configuration."
-    
+        return "AI features unavailable. Check OpenRouter API key."
+
     try:
-        # Get conversation history if conversation_id is provided
+        # Previous messages
         messages = []
         if conversation_id and conversation_id in conversation_history:
             messages = conversation_history[conversation_id]
-        
+
+        # Search context if not provided
         if not context_rules:
-            if not client:
-                return "Database connection is not available. Please provide a MongoDB URI."
-            rules_collection = db["rules"]
             context_rules = list(rules_collection.find({"$text": {"$search": query}}).limit(3))
-            if not context_rules:
-                context_rules = []
-        
-        context = ""
-        for rule in context_rules[:3]:
-            context += f"Rule {rule['rule_id']}: {rule['title']}\n"
-            context += f"Content: {rule['content'][:500]}...\n\n"
-        
-        # Build system message with context
-        system_message = f"""You are an AI assistant specializing in Formula 1 regulations. 
-Based on the following F1 regulations context, please answer questions accurately.
 
-Context:
+        has_context = bool(context_rules)
+
+        # Build system message
+        if has_context:
+            context = ""
+            for rule in context_rules[:3]:
+                context += f"- {rule.get('title', '')}: {rule.get('content', '')[:300]}...\n"
+            system_message = f"""You are a world-class Formula 1 expert AI. Use the regulation context below if helpful, but rely primarily on your own expert knowledge.
+
+Regulation Context:
 {context}
+"""
+        else:
+            system_message = """You are a world-class Formula 1 expert. You MUST answer all questions using your own extensive F1 knowledge.
 
-Please provide clear, accurate answers based on the regulations provided. If the regulations don't contain enough information to answer the question completely, please indicate what additional information might be needed."""
-        
-        # Add system message if this is the first message in conversation
+NEVER say "context is missing" — you know all F1 rules, procedures, teams, and penalties.
+
+Example:
+Q: What does a black flag mean?
+A: A black flag means the driver is disqualified and must return to the pits immediately. It is used for serious infractions or dangerous driving.
+"""
+
+        # Build chat messages
         if not messages:
             messages.append({"role": "system", "content": system_message})
-        
-        # Add user query
         messages.append({"role": "user", "content": query})
-        
+
         response = await ai_client.chat.completions.create(
-            model="deepseek/deepseek-r1",
+            model="deepseek/deepseek-r1",  # DeepSeek R1 model
             messages=messages,
             max_tokens=1000,
             temperature=0.3
         )
-        
+
         ai_response = response.choices[0].message.content
-        
-        # Add AI response to conversation history
+
+        # Update history
         messages.append({"role": "assistant", "content": ai_response})
-        
-        # Store conversation history (keep last 10 messages to avoid token limits)
         if conversation_id:
             conversation_history[conversation_id] = messages[-10:]
-        
+
         return ai_response
+
     except Exception as e:
         return f"AI query error: {e}"

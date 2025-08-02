@@ -4,18 +4,50 @@ import requests
 import os
 from datetime import datetime
 from pymongo import MongoClient
-from openai import OpenAI
-from sentence_transformers import SentenceTransformer
+# from openai import OpenAI
+# from sentence_transformers import SentenceTransformer
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-import torch
+# from sklearn.metrics.pairwise import cosine_similarity
+# import torch
+import httpx
 from dotenv import load_dotenv
 
-if not torch.cuda.is_available():
-    print("Warning: CUDA is not available. PyTorch will use the CPU backend.")
+# if not torch.cuda.is_available():
+#     print("Warning: CUDA is not available. PyTorch will use the CPU backend.")
 
 # Load environment variables
 load_dotenv()
+
+class OpenRouterClient:
+    def __init__(self, api_key, base_url="https://openrouter.ai/api/v1"):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+    async def chat(self, model, messages, max_tokens=1000, temperature=0.3):
+        payload = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=payload
+            )
+            response.raise_for_status()
+            return response.json()
+
+    def embeddings_create(self, **kwargs):
+        # Simplified embeddings - you can implement this if needed
+        # For now, return None to disable embedding features
+        return None
 
 class RuleBoxF1Processor:
     def __init__(self):
@@ -27,17 +59,16 @@ class RuleBoxF1Processor:
         self.db = self.client['rulebox_f1_database']
         if openrouter_api_key:
             try:
-                self.ai_client = OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key=openrouter_api_key,
-                )
+                self.ai_client = OpenRouterClient(api_key=openrouter_api_key)
+                print("OpenRouter client initialized in datacollect.")
             except Exception as e:
-                print(f"Error initializing OpenAI client in datacollect: {e}")
+                print(f"Error initializing OpenRouter client in datacollect: {e}")
                 self.ai_client = None
         else:
             self.ai_client = None
             print("Warning: No OpenRouter API key provided. AI features will be disabled.")
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cuda' if torch.cuda.is_available() else 'cpu')
+        # self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cuda' if torch.cuda.is_available() else 'cpu')
+        self.embedding_model = None  # Temporarily disabled
         self._create_indexes()
 
     def _create_indexes(self):
@@ -159,7 +190,8 @@ class RuleBoxF1Processor:
         rule_id = f"{prefix}-2025-{article_info['number'].replace('.', '-')}"
         clean_content = self.clean_and_structure_text(content)
         embedding_text = f"{article_info['title']} {clean_content}"
-        embedding = self.embedding_model.encode(embedding_text).tolist()
+        # embedding = self.embedding_model.encode(embedding_text).tolist()
+        embedding = []  # Temporarily disabled embeddings
         keywords = self._extract_keywords(embedding_text)
         rule = {
             'rule_id': rule_id,
@@ -311,27 +343,23 @@ class RuleBoxF1Processor:
 
     def semantic_search(self, query, limit=10, category_filter=None):
         try:
-            query_embedding = self.embedding_model.encode(query)
-            query_embedding = np.array(query_embedding).reshape(1, -1)
-            
-            mongo_filter = {}
+            # Fallback to text-based search when embeddings are disabled
+            mongo_filter = {
+                "$or": [
+                    {"title": {"$regex": query, "$options": "i"}},
+                    {"content": {"$regex": query, "$options": "i"}},
+                    {"metadata.keywords": {"$regex": query, "$options": "i"}}
+                ]
+            }
             if category_filter:
                 mongo_filter['category'] = category_filter
-            rules = list(self.db.rules.find(mongo_filter))
+            
+            rules = list(self.db.rules.find(mongo_filter).limit(limit))
             if not rules:
-                print("Warning: No rules found in the database.")
+                print("Warning: No rules found matching the query.")
                 return []
-            similarities = []
-            for rule in rules:
-                if 'metadata' in rule and 'embedding' in rule['metadata']:
-                    rule_embedding = np.array(rule['metadata']['embedding']).reshape(1, -1)
-                    similarity = cosine_similarity(query_embedding, rule_embedding)[0][0]
-                    similarities.append({
-                        'rule': rule,
-                        'similarity': float(similarity)
-                    })
-            similarities.sort(key=lambda x: x['similarity'], reverse=True)
-            return [item['rule'] for item in similarities[:limit]]
+            
+            return rules
         except Exception as e:
             print(f"Error in semantic search: {e}")
             return []
@@ -449,9 +477,13 @@ class RuleBoxF1Processor:
     def test_embedding_model(self):
         """Test if the embedding model is working correctly"""
         try:
+            if self.embedding_model is None:
+                print("✗ Embedding model is disabled")
+                return False
             test_text = "This is a test sentence for the embedding model."
-            embedding = self.embedding_model.encode(test_text)
-            print(f"✓ Embedding model working. Embedding shape: {embedding.shape}")
+            # embedding = self.embedding_model.encode(test_text)
+            # print(f"✓ Embedding model working. Embedding shape: {embedding.shape}")
+            print("✓ Embedding model test skipped (disabled)")
             return True
         except Exception as e:
             print(f"✗ Embedding model error: {e}")
