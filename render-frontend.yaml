@@ -12,4 +12,4 @@ services:
         - Dockerfile.frontend
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://your-backend-service.onrender.com
+        value: https://rulebox-f1.onrender.com
