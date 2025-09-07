@@ -97,7 +97,7 @@ A: A black flag means the driver is disqualified and must return to the pits imm
         response = await ai_client.chat.completions.create(
             model="deepseek/deepseek-r1",  # DeepSeek R1 model
             messages=messages,
-            max_tokens=10000,
+            max_tokens=300,
             temperature=0.3
         )
 
