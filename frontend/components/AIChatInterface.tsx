@@ -53,39 +53,34 @@ export default function AIChatInterface() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const newMessage: Message = {
-      text: input,
-      sender: "user",
-      timestamp: new Date().toISOString(),
-    };
+  const newMessage: Message = {
+    text: input,
+    sender: "user",
+    timestamp: new Date().toISOString(),
+  };
 
-    setMessages([...messages, newMessage]);
-    setIsTyping(true);
+  setMessages([...messages, newMessage]);
+  setIsTyping(true);
 
-    try {
-      // Call Python backend directly
-      const response = await fetch("/api/ai-query", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: input,
-          conversation_id: conversationId,
-        }),
-      });
+  try {
+    const response = await fetch("/api/ai-query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: input,
+        conversation_id: conversationId,
+      }),
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Only log in debug mode
-        if (DEBUG_LOGGING) {
-          console.log("AI Response:", data);
-        }
-        
-        setIsTyping(false);
+    if (response.ok) {
+      const data = await response.json();
+
+      // Validate the response structure
+      if (data && data.response) {
         setMessages((prev) => [
           ...prev,
           {
@@ -95,36 +90,43 @@ export default function AIChatInterface() {
           },
         ]);
       } else {
-        const errorData = await response.json();
-        setIsTyping(false);
         setMessages((prev) => [
           ...prev,
           {
-            text: `Error: ${errorData.detail || "Failed to get AI response"}`,
+            text: "Unexpected response format from the server.",
             sender: "ai",
             timestamp: new Date().toISOString(),
           },
         ]);
       }
-    } catch (error) {
-      // Only log errors in debug mode
-      if (DEBUG_LOGGING) {
-        console.error("Network error:", error);
-      }
-      setIsTyping(false);
+    } else {
+      const errorData = await response.json();
       setMessages((prev) => [
         ...prev,
         {
-          text: "Network error. Please check if the backend server is running.",
+          text: `Error: ${errorData.detail || "Failed to get AI response"}`,
           sender: "ai",
           timestamp: new Date().toISOString(),
         },
       ]);
     }
+  } catch (error) {
+    if (DEBUG_LOGGING) {
+      console.error("Network error:", error);
+    }
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: "Network error. Please check if the backend server is running.",
+        sender: "ai",
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }
 
-    setInput("");
-  };
-
+  setIsTyping(false);
+  setInput("");
+};
   // Typing indicator component
   const TypingIndicator = () => (
     <div className="message-ai">
