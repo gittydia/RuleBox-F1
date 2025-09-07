@@ -3,6 +3,7 @@ from pymongo import MongoClient
 import dotenv
 import os
 import asyncio
+from fastapi import HTTPException
 
 # Load .env file
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -55,7 +56,7 @@ conversation_history = {}
 # Main AI query function
 async def ai_query(query, context_rules=None, conversation_id=None):
     if not ai_client:
-        return "AI features unavailable. Check OpenRouter API key."
+        raise HTTPException(status_code=503, detail="AI features unavailable. Check OpenRouter API key.")
 
     try:
         # Previous messages
@@ -73,7 +74,7 @@ async def ai_query(query, context_rules=None, conversation_id=None):
         if has_context:
             context = ""
             for rule in context_rules[:3]:
-                context += f"- {rule.get('title', '')}: {rule.get('content', '')[:300]}...\n"
+                context += f"- {rule.get('title', '')}: {rule.get('content', '')[:100]}...\n"
             system_message = f"""You are a world-class Formula 1 expert AI. Use the regulation context below if helpful, but rely primarily on your own expert knowledge.
 
 Regulation Context:
@@ -96,10 +97,14 @@ A: A black flag means the driver is disqualified and must return to the pits imm
 
         response = await ai_client.chat.completions.create(
             model="deepseek/deepseek-r1",  # DeepSeek R1 model
-            messages=messages,
-            max_tokens=300,
-            temperature=0.3
+            messages=messages[-2],
+            max_tokens=50,  
+            temperature=0.1
         )
+
+        # Validate response structure
+        if not response or not response.choices:
+            raise HTTPException(status_code=500, detail="Invalid response from AI client.")
 
         ai_response = response.choices[0].message.content
 
@@ -108,7 +113,7 @@ A: A black flag means the driver is disqualified and must return to the pits imm
         if conversation_id:
             conversation_history[conversation_id] = messages[-10:]
 
-        return ai_response
+        return {"response": ai_response}
 
     except Exception as e:
-        return f"AI query error: {e}"
+        raise HTTPException(status_code=500, detail=f"AI query error: {e}")

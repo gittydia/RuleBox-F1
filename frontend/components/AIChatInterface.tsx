@@ -111,9 +111,6 @@ export default function AIChatInterface() {
       ]);
     }
   } catch (error) {
-    if (DEBUG_LOGGING) {
-      console.error("Network error:", error);
-    }
     setMessages((prev) => [
       ...prev,
       {
